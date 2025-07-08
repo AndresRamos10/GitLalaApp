@@ -1,0 +1,245 @@
+﻿@using LalaHealthCare.DataAccess.Models
+@using LalaHealthCare.App.Components.Controls
+@inject IGeolocationService GeolocationService
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Logout" Class="mr-3 mb-n1" />
+            Confirmar Check-Out
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (Visit != null)
+        {
+            <MudGrid>
+                <!-- Información del Paciente -->
+                <MudItem xs="12">
+                    <MudCard Outlined="true">
+                        <MudCardContent>
+                            <div class="d-flex align-center mb-3">
+                                <MudAvatar Size="Size.Large" Class="mr-3">
+                                    @if (!string.IsNullOrEmpty(Visit.PatientProfilePictureUrl))
+                                    {
+                                        <MudImage Src="@Visit.PatientProfilePictureUrl" />
+                                    }
+                                    else
+                                    {
+                                        <MudIcon Icon="@Icons.Material.Filled.Person" />
+                                    }
+                                </MudAvatar>
+                                <div>
+                                    <MudText Typo="Typo.h6">@Visit.PatientName</MudText>
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">ID: @Visit.PatientId</MudText>
+                                </div>
+                            </div>
+
+                            <MudDivider Class="my-3" />
+
+                            <MudGrid>
+                                <MudItem xs="12" sm="6">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Hora de entrada</MudText>
+                                    <MudText Typo="Typo.body1">
+                                        <MudIcon Icon="@Icons.Material.Filled.Login" Size="Size.Small" Class="mr-1" />
+                                        @(Visit.CheckInTime?.ToString("hh:mm tt") ?? "N/A")
+                                    </MudText>
+                                </MudItem>
+                                <MudItem xs="12" sm="6">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Duración</MudText>
+                                    <MudText Typo="Typo.body1">
+                                        <MudIcon Icon="@Icons.Material.Filled.Timer" Size="Size.Small" Class="mr-1" />
+                                        @if (Visit.CheckInTime.HasValue)
+                                        {
+                                            var duration = DateTime.Now - Visit.CheckInTime.Value;
+                                            <span>@($"{(int)duration.TotalHours:00}:{duration.Minutes:00}") horas</span>
+                                        }
+                                        else
+                                        {
+                                            <span>N/A</span>
+                                        }
+                                    </MudText>
+                                </MudItem>
+                                <MudItem xs="12" Class="mt-3">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Ubicación de Check-In</MudText>
+                                    <MudText Typo="Typo.body2">
+                                        <MudIcon Icon="@Icons.Material.Filled.MyLocation" Size="Size.Small" Class="mr-1" />
+                                        @(Visit.CheckInAddress ?? "No disponible")
+                                    </MudText>
+                                </MudItem>
+                            </MudGrid>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <!-- Observaciones -->
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_observations"
+                                  Label="Observaciones de la visita"
+                                  Placeholder="Describe los servicios realizados, condición del paciente, etc."
+                                  Variant="Variant.Outlined"
+                                  Lines="4"
+                                  Required="true"
+                                  RequiredError="Las observaciones son requeridas"
+                                  FullWidth="true" />
+                </MudItem>
+
+                <!-- Ubicación Actual -->
+                <MudItem xs="12">
+                    <MudCard Outlined="true">
+                        <MudCardContent>
+                            <MudText Typo="Typo.subtitle2" Class="mb-2">
+                                <MudIcon Icon="@Icons.Material.Filled.MyLocation" Size="Size.Small" Class="mr-1" />
+                                Ubicación de Check-Out
+                            </MudText>
+
+                            @if (_isLoadingLocation)
+                            {
+                                <div class="d-flex align-center">
+                                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                                    <MudText Typo="Typo.body2">Obteniendo ubicación...</MudText>
+                                </div>
+                            }
+                            else if (_locationResult != null && _locationResult.Success)
+                            {
+                                <MudText Typo="Typo.body2" Color="Color.Success">
+                                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Class="mr-1" />
+                                    @_locationResult.Address
+                                </MudText>
+                                @if (_locationResult.Accuracy.HasValue)
+                                {
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        Precisión: ±@(_locationResult.Accuracy.Value.ToString("F0")) metros
+                                    </MudText>
+                                }
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.body2" Color="Color.Warning">
+                                    <MudIcon Icon="@Icons.Material.Filled.LocationOff" Size="Size.Small" Class="mr-1" />
+                                    Ubicación no disponible
+                                </MudText>
+                            }
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <!-- Firma -->
+                <MudItem xs="12">
+                    <SimpleSignaturePad @ref="_signaturePad" Required="true" />
+                </MudItem>
+
+                <!-- Validación -->
+                @if (_showValidation)
+                {
+                    <MudItem xs="12">
+                        <MudAlert Severity="Severity.Warning" Dense="true">
+                            Por favor complete todos los campos requeridos (observaciones y firma)
+                        </MudAlert>
+                    </MudItem>
+                }
+            </MudGrid>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   OnClick="Confirm"
+                   Disabled="@(_isConfirming)"
+                   StartIcon="@(_isConfirming ? Icons.Material.Filled.Refresh : Icons.Material.Filled.CheckCircle)">
+            @if (_isConfirming)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                <span>Procesando...</span>
+            }
+            else
+            {
+                <span>Confirmar Check-Out</span>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public Visit Visit { get; set; } = null!;
+
+    private SimpleSignaturePad? _signaturePad;
+    private string _observations = string.Empty;
+    private bool _isConfirming = false;
+    private bool _showValidation = false;
+    private bool _isLoadingLocation = true;
+    private GeolocationResult? _locationResult;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Obtener ubicación en segundo plano
+        await GetCurrentLocation();
+    }
+
+    private async Task GetCurrentLocation()
+    {
+        _isLoadingLocation = true;
+        try
+        {
+            _locationResult = await GeolocationService.GetCurrentLocationAsync();
+        }
+        catch
+        {
+            // Si falla, continuamos sin ubicación
+            _locationResult = new GeolocationResult
+            {
+                Success = false,
+                ErrorMessage = "No se pudo obtener la ubicación"
+            };
+        }
+        finally
+        {
+            _isLoadingLocation = false;
+            StateHasChanged();
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private async Task Confirm()
+    {
+        // Validar campos requeridos
+        if (string.IsNullOrWhiteSpace(_observations) || _signaturePad == null || !_signaturePad.HasSignature)
+        {
+            _showValidation = true;
+            StateHasChanged();
+            return;
+        }
+
+        _isConfirming = true;
+        _showValidation = false;
+        StateHasChanged();
+
+        try
+        {
+            // Obtener la firma como base64
+            var signatureData = await _signaturePad.GetSignatureDataUrl();
+
+            await Task.Delay(500); // Simular proceso
+
+            var result = new CheckOutConfirmationResult
+            {
+                Confirmed = true,
+                Observations = _observations,
+                SignatureData = signatureData,
+                LocationResult = _locationResult
+            };
+
+            MudDialog.Close(DialogResult.Ok(result));
+        }
+        catch
+        {
+            _isConfirming = false;
+            StateHasChanged();
+        }
+    }
+}

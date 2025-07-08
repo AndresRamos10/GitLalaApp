@@ -1,0 +1,222 @@
+﻿@inject IJSRuntime JSRuntime
+
+<div class="signature-container">
+    <MudPaper Outlined="true" Class="pa-2">
+        <div class="d-flex justify-space-between align-center mb-2">
+            <MudText Typo="Typo.subtitle2">Firma</MudText>
+            <MudButton Size="Size.Small"
+                       StartIcon="@Icons.Material.Filled.Clear"
+                       OnClick="ClearSignature"
+                       Color="Color.Error">
+                Limpiar
+            </MudButton>
+        </div>
+        <div class="canvas-wrapper" @onclick:preventDefault="true">
+            <canvas @ref="canvasElement"
+                    class="signature-canvas">
+            </canvas>
+        </div>
+        @if (!HasSignature)
+        {
+            <MudText Typo="Typo.caption" Color="Color.Secondary" Align="Align.Center" Class="mt-2">
+                Dibuja tu firma en el recuadro
+            </MudText>
+        }
+    </MudPaper>
+</div>
+
+<style>
+    .signature-container {
+        width: 100%;
+    }
+
+    .canvas-wrapper {
+        position: relative;
+        width: 100%;
+        height: 200px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        overflow: hidden;
+        touch-action: none;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+
+    .signature-canvas {
+        width: 100%;
+        height: 100%;
+        background-color: white;
+        cursor: crosshair;
+        display: block;
+        touch-action: none;
+    }
+</style>
+
+@code {
+    private ElementReference canvasElement;
+    private bool hasSignature = false;
+    private DotNetObjectReference<SimpleSignaturePad>? objRef;
+
+    [Parameter] public EventCallback<string> OnSignatureChanged { get; set; }
+    [Parameter] public bool Required { get; set; } = true;
+
+    public bool HasSignature => hasSignature;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            objRef = DotNetObjectReference.Create(this);
+            await SetupCanvas();
+        }
+    }
+
+    private async Task SetupCanvas()
+    {
+        await JSRuntime.InvokeVoidAsync("eval", @"
+            window.signaturePad = {
+                canvas: null,
+                ctx: null,
+                isDrawing: false,
+                lastX: 0,
+                lastY: 0,
+                dotNetRef: null,
+
+                init: function(canvas, dotNetRef) {
+                    this.canvas = canvas;
+                    this.dotNetRef = dotNetRef;
+                    this.ctx = canvas.getContext('2d');
+
+                    // Configurar el canvas con el tamaño correcto
+                    const rect = canvas.getBoundingClientRect();
+                    canvas.width = rect.width * window.devicePixelRatio;
+                    canvas.height = rect.height * window.devicePixelRatio;
+
+                    // Escalar el contexto para manejar la densidad de píxeles
+                    this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+                    // Configurar estilos de dibujo
+                    this.ctx.strokeStyle = '#000000';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.lineCap = 'round';
+                    this.ctx.lineJoin = 'round';
+
+                    // Prevenir el comportamiento por defecto del táctil
+                    canvas.style.touchAction = 'none';
+
+                    // Eventos del mouse
+                    canvas.addEventListener('mousedown', this.handleStart.bind(this));
+                    canvas.addEventListener('mousemove', this.handleMove.bind(this));
+                    canvas.addEventListener('mouseup', this.handleEnd.bind(this));
+                    canvas.addEventListener('mouseleave', this.handleEnd.bind(this));
+
+                    // Eventos táctiles
+                    canvas.addEventListener('touchstart', this.handleStart.bind(this), { passive: false });
+                    canvas.addEventListener('touchmove', this.handleMove.bind(this), { passive: false });
+                    canvas.addEventListener('touchend', this.handleEnd.bind(this), { passive: false });
+                    canvas.addEventListener('touchcancel', this.handleEnd.bind(this), { passive: false });
+                },
+
+                getCoordinates: function(e) {
+                    const rect = this.canvas.getBoundingClientRect();
+                    let clientX, clientY;
+
+                    if (e.touches && e.touches.length > 0) {
+                        clientX = e.touches[0].clientX;
+                        clientY = e.touches[0].clientY;
+                    } else if (e.changedTouches && e.changedTouches.length > 0) {
+                        clientX = e.changedTouches[0].clientX;
+                        clientY = e.changedTouches[0].clientY;
+                    } else {
+                        clientX = e.clientX;
+                        clientY = e.clientY;
+                    }
+
+                    return {
+                        x: clientX - rect.left,
+                        y: clientY - rect.top
+                    };
+                },
+
+                handleStart: function(e) {
+                    e.preventDefault();
+                    this.isDrawing = true;
+                    const coords = this.getCoordinates(e);
+                    this.lastX = coords.x;
+                    this.lastY = coords.y;
+
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(this.lastX, this.lastY);
+                },
+
+                handleMove: function(e) {
+                    e.preventDefault();
+                    if (!this.isDrawing) return;
+
+                    const coords = this.getCoordinates(e);
+
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(this.lastX, this.lastY);
+                    this.ctx.lineTo(coords.x, coords.y);
+                    this.ctx.stroke();
+
+                    this.lastX = coords.x;
+                    this.lastY = coords.y;
+
+                    // Notificar a Blazor que hay firma
+                    if (this.dotNetRef) {
+                        this.dotNetRef.invokeMethodAsync('NotifySignatureChanged', true);
+                    }
+                },
+
+                handleEnd: function(e) {
+                    e.preventDefault();
+                    this.isDrawing = false;
+                },
+
+                clear: function() {
+                    const rect = this.canvas.getBoundingClientRect();
+                    this.ctx.clearRect(0, 0, rect.width, rect.height);
+                    if (this.dotNetRef) {
+                        this.dotNetRef.invokeMethodAsync('NotifySignatureChanged', false);
+                    }
+                },
+
+                getDataUrl: function() {
+                    return this.canvas.toDataURL('image/png');
+                }
+            };
+        ");
+
+        await JSRuntime.InvokeVoidAsync("signaturePad.init", canvasElement, objRef);
+    }
+
+    [JSInvokable]
+    public void NotifySignatureChanged(bool hasSignature)
+    {
+        this.hasSignature = hasSignature;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public async Task ClearSignature()
+    {
+        await JSRuntime.InvokeVoidAsync("signaturePad.clear");
+        hasSignature = false;
+        await OnSignatureChanged.InvokeAsync(string.Empty);
+    }
+
+    public async Task<string> GetSignatureDataUrl()
+    {
+        if (!hasSignature) return string.Empty;
+        return await JSRuntime.InvokeAsync<string>("signaturePad.getDataUrl");
+    }
+
+    public void Dispose()
+    {
+        objRef?.Dispose();
+    }
+}

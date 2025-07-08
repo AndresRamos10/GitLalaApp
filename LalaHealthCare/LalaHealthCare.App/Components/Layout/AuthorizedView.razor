@@ -1,0 +1,17 @@
+﻿@inject IAuthenticationService AuthService
+@inject NavigationManager Navigation 
+
+@if (IsAuthenticated)
+{
+    @ChildContent
+}
+else
+{
+    <LalaHealthCare.Maui.Components.Layout.RedirectToLogin />
+}
+
+@code {
+    [Parameter] public RenderFragment ChildContent { get; set; } = null!;
+    
+    private bool IsAuthenticated => AuthService.IsAuthenticated;
+}

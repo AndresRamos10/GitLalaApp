@@ -1,0 +1,230 @@
+﻿@page "/notifications/settings"
+@inject INotificationService NotificationService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+@using LalaHealthCare.App.Models
+
+    <MudContainer MaxWidth="MaxWidth.Small" Class="mt-4">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h5" Class="mb-4">
+                <MudIcon Icon="@Icons.Material.Filled.Notifications" Class="mr-2" />
+                Configuración de Notificaciones
+            </MudText>
+
+            @if (_isLoading)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else if (_settings != null)
+            {
+                <MudGrid>
+                    <!-- Habilitar/Deshabilitar Notificaciones -->
+                    <MudItem xs="12">
+                        <MudSwitch @bind-Checked="_settings.Enabled" T="bool"
+                                   Label="Notificaciones habilitadas"
+                                   Color="Color.Primary" />
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudDivider Class="my-3" />
+                    </MudItem>
+
+                    <!-- Configuración de Recordatorios -->
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">Recordatorios de Visitas</MudText>
+                        <MudSlider @bind-Value="_reminderMinutes" 
+                                   Min="5" Max="120" Step="5"
+                                   Disabled="!_settings.Enabled">
+                            <MudText Typo="Typo.body2">
+                                Recordar @_reminderMinutes minutos antes
+                            </MudText>
+                        </MudSlider>
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudDivider Class="my-3" />
+                    </MudItem>
+
+                    <!-- Sonido y Vibración -->
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">Sonido y Vibración</MudText>
+                    </MudItem>
+                    
+                    <MudItem xs="12" sm="6">
+                        <MudSwitch @bind-Checked="_settings.SoundEnabled" T="bool"
+                                   Label="Sonido"
+                                   Color="Color.Primary"
+                                   Disabled="!_settings.Enabled" />
+                    </MudItem>
+                    
+                    <MudItem xs="12" sm="6">
+                        <MudSwitch @bind-Checked="_settings.VibrationEnabled" T="bool"
+                                   Label="Vibración"
+                                   Color="Color.Primary"
+                                   Disabled="!_settings.Enabled" />
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudDivider Class="my-3" />
+                    </MudItem>
+
+                    <!-- Horario Silencioso -->
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">Horario Silencioso</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                            No recibir notificaciones con sonido durante este horario
+                        </MudText>
+                    </MudItem>
+                    
+                    <MudItem xs="12" sm="6">
+                        <MudTimePicker Label="Desde" 
+                                       @bind-Time="_quietStart"
+                                       Variant="Variant.Outlined"
+                                       Disabled="!_settings.Enabled" />
+                    </MudItem>
+                    
+                    <MudItem xs="12" sm="6">
+                        <MudTimePicker Label="Hasta" 
+                                       @bind-Time="_quietEnd"
+                                       Variant="Variant.Outlined"
+                                       Disabled="!_settings.Enabled" />
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudDivider Class="my-3" />
+                    </MudItem>
+
+                    <!-- Probar Notificación -->
+                    <MudItem xs="12">
+                        <MudButton Variant="Variant.Outlined" 
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.NotificationImportant"
+                                   OnClick="TestNotification"
+                                   Disabled="!_settings.Enabled"
+                                   FullWidth="true">
+                            Probar Notificación
+                        </MudButton>
+                    </MudItem>
+
+                    <!-- Botones de Acción -->
+                    <MudItem xs="12" Class="mt-4">
+                        <div class="d-flex justify-space-between">
+                            <MudButton Variant="Variant.Text" 
+                                       OnClick="Cancel">
+                                Cancelar
+                            </MudButton>
+                            <MudButton Variant="Variant.Filled" 
+                                       Color="Color.Primary"
+                                       OnClick="SaveSettings"
+                                       Disabled="_isSaving">
+                                @if (_isSaving)
+                                {
+                                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                                }
+                                Guardar Cambios
+                            </MudButton>
+                        </div>
+                    </MudItem>
+                </MudGrid>
+            }
+        </MudPaper>
+
+        <!-- Información adicional -->
+        <MudPaper Class="pa-4 mt-4">
+            <MudText Typo="Typo.subtitle2" Class="mb-2">
+                <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Class="mr-1" />
+                Información sobre Notificaciones
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Las notificaciones te ayudan a recordar tus visitas programadas y mantenerte al día con tu agenda.
+            </MudText>
+            <MudList Dense="true" Class="mt-2" T="string">
+                <MudListItem Icon="@Icons.Material.Filled.Schedule">
+                    <MudText Typo="Typo.body2">Recordatorio antes de cada visita</MudText>
+                </MudListItem>
+                <MudListItem Icon="@Icons.Material.Filled.Alarm">
+                    <MudText Typo="Typo.body2">Alerta a la hora exacta de la visita</MudText>
+                </MudListItem>
+                <MudListItem Icon="@Icons.Material.Filled.Warning">
+                    <MudText Typo="Typo.body2">Notificación si la visita está retrasada</MudText>
+                </MudListItem>
+            </MudList>
+        </MudPaper>
+    </MudContainer>
+
+@code {
+    private NotificationSettingsModel? _settings;
+    private bool _isLoading = true;
+    private bool _isSaving = false;
+    private int _reminderMinutes = 30;
+    private TimeSpan? _quietStart;
+    private TimeSpan? _quietEnd;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSettings();
+    }
+
+    private async Task LoadSettings()
+    {
+        try
+        {
+            _isLoading = true;
+            _settings = await NotificationService.GetSettingsAsync();
+            
+            if (_settings != null)
+            {
+                _reminderMinutes = _settings.ReminderMinutesBefore;
+                _quietStart = _settings.QuietHoursStart;
+                _quietEnd = _settings.QuietHoursEnd;
+            }
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task SaveSettings()
+    {
+        if (_settings == null) return;
+
+        try
+        {
+            _isSaving = true;
+            
+            _settings.ReminderMinutesBefore = _reminderMinutes;
+            _settings.QuietHoursStart = _quietStart ?? new TimeSpan(22, 0, 0);
+            _settings.QuietHoursEnd = _quietEnd ?? new TimeSpan(7, 0, 0);
+            
+            await NotificationService.SaveSettingsAsync(_settings);
+            
+            Snackbar.Add("Configuración guardada correctamente", Severity.Success);
+            Navigation.NavigateTo("/dashboard");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error al guardar la configuración", Severity.Error);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task TestNotification()
+    {
+        await NotificationService.ShowInstantNotificationAsync(
+            "Notificación de Prueba",
+            "¡Las notificaciones están funcionando correctamente!",
+            NotificationType.General
+        );
+        
+        Snackbar.Add("Notificación enviada", Severity.Info);
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/dashboard");
+    }
+}

@@ -1,0 +1,77 @@
+﻿@using Microsoft.AspNetCore.Components.Web
+@inject ILoggingService LoggingService
+@inject ISnackbar Snackbar
+
+<ErrorBoundary @ref="errorBoundary">
+    <ChildContent>
+        @ChildContent
+    </ChildContent>
+    <ErrorContent Context="ex">
+        <MudAlert Severity="Severity.Error" Class="mt-4">
+            <MudText Typo="Typo.h6">Oops! Algo salió mal</MudText>
+            <MudText Typo="Typo.body2" Class="mt-2">
+                Ha ocurrido un error inesperado. El equipo técnico ha sido notificado.
+            </MudText>
+            @if (IsDevelopment)
+            {
+                <MudText Typo="Typo.caption" Class="mt-2" Style="font-family: monospace;">
+                    @ex.Message
+                </MudText>
+            }
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Class="mt-3"
+                       OnClick="() => Reset(ex)">
+                Reintentar
+            </MudButton>
+        </MudAlert>
+    </ErrorContent>
+</ErrorBoundary>
+
+@code {
+    [Parameter] public RenderFragment ChildContent { get; set; } = null!;
+    private ErrorBoundary? errorBoundary;
+    private bool IsDevelopment = false;
+
+    protected override void OnInitialized()
+    {
+#if DEBUG
+        IsDevelopment = true;
+#endif
+    }
+
+    protected override void OnParametersSet()
+    {
+        errorBoundary?.Recover();
+    }
+
+    private async Task Reset(Exception? exception = null)
+    {
+        // Si hay una excepción, la registramos
+        if (exception != null)
+        {
+            await LogError(exception);
+        }
+
+        errorBoundary?.Recover();
+    }
+
+    private async Task LogError(Exception exception)
+    {
+        try
+        {
+            await LoggingService.LogErrorAsync("Unhandled exception in UI", exception, new Dictionary<string, object>
+            {
+                { "Component", GetType().Name },
+                { "Timestamp", DateTime.UtcNow }
+            });
+
+            Snackbar.Add("Ha ocurrido un error. Por favor, intente nuevamente.", Severity.Error);
+        }
+        catch
+        {
+            // Si falla el logging, solo mostramos el snackbar
+            Snackbar.Add("Ha ocurrido un error. Por favor, intente nuevamente.", Severity.Error);
+        }
+    }
+}

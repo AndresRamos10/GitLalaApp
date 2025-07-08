@@ -1,0 +1,22 @@
+﻿@inject NavigationManager Navigation
+
+<style>
+    .page-container {
+        background-color: #2593ec;
+        min-height: 100vh;
+    }
+</style>
+
+<div class="text-center mt-8 page-container">
+    <MudImage Src="images/welcome.svg" Alt="careNote360" Elevation="25" Class="rounded-lg" />
+</div>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Navigation.NavigateTo("/login");
+        }
+    }
+}

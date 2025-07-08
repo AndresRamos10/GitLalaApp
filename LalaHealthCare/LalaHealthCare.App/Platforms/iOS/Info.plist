@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+    <key>UIDeviceFamily</key>
+    <array>
+        <integer>1</integer>
+        <integer>2</integer>
+    </array>
+    <key>UIRequiredDeviceCapabilities</key>
+    <array>
+        <string>arm64</string>
+    </array>
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>XSAppIconAssets</key>
+    <string>Assets.xcassets/appicon.appiconset</string>
+
+	<key>NSFaceIDUsageDescription</key>
+	<string>Utiliza Face ID para acceso rápido y seguro a CareNote360</string>
+
+	<!-- Permisos de ubicación -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>LalaHealthCare necesita acceder a tu ubicación para registrar el lugar donde realizas los Check-In y Check-Out de las visitas.</string>
+
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>LalaHealthCare necesita acceder a tu ubicación para registrar el lugar donde realizas los Check-In y Check-Out de las visitas.</string>
+
+	<!-- Permisos de notificaciones -->
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>LalaHealthCare te enviará recordatorios sobre tus visitas programadas para ayudarte a mantener tu agenda al día.</string>
+
+	<!-- Permisos de cámara y fotos -->
+	<key>NSCameraUsageDescription</key>
+	<string>LalaHealthCare necesita acceso a la cámara para tomar fotos durante las visitas.</string>
+
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>LalaHealthCare necesita acceso a tus fotos para adjuntar imágenes a los reportes de visitas.</string>
+
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>LalaHealthCare necesita permiso para guardar fotos en tu biblioteca.</string>
+
+	<!-- Configuración de notificaciones -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+		<string>fetch</string>
+		<string>processing</string>
+	</array>
+
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.scisoftware.cn360.refresh</string>
+		<string>com.scisoftware.cn360.processing</string>
+	</array>
+
+</dict>
+</plist>

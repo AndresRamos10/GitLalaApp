@@ -1,0 +1,13 @@
+﻿@inherits LayoutComponentBase
+@using LalaHealthCare.App.Themes
+
+<MudThemeProvider Theme="CustomTheme.DefaultTheme" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<AppErrorBoundary>
+    <div style="height: 100%;">        
+        @Body
+    </div>
+</AppErrorBoundary>

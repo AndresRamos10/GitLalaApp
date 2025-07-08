@@ -1,0 +1,198 @@
+﻿@using LalaHealthCare.DataAccess.Models
+@inject IGeolocationService GeolocationService
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Login" Class="mr-3 mb-n1" />
+            Confirmar Check-In
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (Visit != null)
+        {
+            <MudGrid>
+                <!-- Información del Paciente -->
+                <MudItem xs="12">
+                    <MudCard Outlined="true">
+                        <MudCardContent>
+                            <div class="d-flex align-center mb-3">
+                                <MudAvatar Size="Size.Large" Class="mr-3">
+                                    @if (!string.IsNullOrEmpty(Visit.PatientProfilePictureUrl))
+                                    {
+                                        <MudImage Src="@Visit.PatientProfilePictureUrl" />
+                                    }
+                                    else
+                                    {
+                                        <MudIcon Icon="@Icons.Material.Filled.Person" />
+                                    }
+                                </MudAvatar>
+                                <div>
+                                    <MudText Typo="Typo.h6">@Visit.PatientName</MudText>
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">ID: @Visit.PatientId</MudText>
+                                </div>
+                            </div>
+                            
+                            <MudDivider Class="my-3" />
+                            
+                            <MudGrid>
+                                <MudItem xs="12" sm="6">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Hora programada</MudText>
+                                    <MudText Typo="Typo.body1">
+                                        <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Class="mr-1" />
+                                        @Visit.ScheduledDateTime.ToString("hh:mm tt")
+                                    </MudText>
+                                </MudItem>
+                                <MudItem xs="12" sm="6">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Hora actual</MudText>
+                                    <MudText Typo="Typo.body1">
+                                        <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Small" Class="mr-1" />
+                                        @DateTime.Now.ToString("hh:mm tt")
+                                    </MudText>
+                                </MudItem>
+                                <MudItem xs="12" Class="mt-3">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Ubicación programada</MudText>
+                                    <MudText Typo="Typo.body1">
+                                        <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Class="mr-1" />
+                                        @Visit.Location
+                                    </MudText>
+                                </MudItem>
+                            </MudGrid>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <!-- Ubicación Actual -->
+                <MudItem xs="12">
+                    <MudCard Outlined="true">
+                        <MudCardContent>
+                            <MudText Typo="Typo.subtitle2" Class="mb-2">
+                                <MudIcon Icon="@Icons.Material.Filled.MyLocation" Size="Size.Small" Class="mr-1" />
+                                Ubicación Actual
+                            </MudText>
+                            
+                            @if (_isLoadingLocation)
+                            {
+                                <div class="d-flex align-center">
+                                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                                    <MudText Typo="Typo.body2">Obteniendo ubicación...</MudText>
+                                </div>
+                            }
+                            else if (_locationResult != null)
+                            {
+                                @if (_locationResult.Success)
+                                {
+                                    <MudText Typo="Typo.body2" Color="Color.Success">
+                                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Class="mr-1" />
+                                        @_locationResult.Address
+                                    </MudText>
+                                    @if (_locationResult.Accuracy.HasValue)
+                                    {
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                            Precisión: ±@(_locationResult.Accuracy.Value.ToString("F0")) metros
+                                        </MudText>
+                                    }
+                                }
+                                else
+                                {
+                                    <MudAlert Severity="Severity.Warning" Dense="true">
+                                        @_locationResult.ErrorMessage
+                                    </MudAlert>
+                                }
+                            }
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <!-- Diferencia de tiempo -->
+                @{
+                    var timeDifference = DateTime.Now - Visit.ScheduledDateTime;
+                    var isLate = timeDifference.TotalMinutes > 5;
+                    var isEarly = timeDifference.TotalMinutes < -5;
+                }
+                
+                @if (isLate || isEarly)
+                {
+                    <MudItem xs="12">
+                        <MudAlert Severity="@(isLate ? Severity.Warning : Severity.Info)" Dense="true">
+                            @if (isLate)
+                            {
+                                <span>Llegando @((int)timeDifference.TotalMinutes) minutos tarde</span>
+                            }
+                            else
+                            {
+                                <span>Llegando @((int)Math.Abs(timeDifference.TotalMinutes)) minutos temprano</span>
+                            }
+                        </MudAlert>
+                    </MudItem>
+                }
+            </MudGrid>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   OnClick="Confirm"
+                   Disabled="@(_isLoadingLocation || _isConfirming || (_locationResult != null && !_locationResult.Success))"
+                   StartIcon="@(_isConfirming ? Icons.Material.Filled.Refresh : Icons.Material.Filled.CheckCircle)">
+            @if (_isConfirming)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                <span>Confirmando...</span>
+            }
+            else
+            {
+                <span>Confirmar Check-In</span>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public Visit Visit { get; set; } = null!;
+
+    private GeolocationResult? _locationResult;
+    private bool _isLoadingLocation = true;
+    private bool _isConfirming = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetCurrentLocation();
+    }
+
+    private async Task GetCurrentLocation()
+    {
+        _isLoadingLocation = true;
+        try
+        {
+            _locationResult = await GeolocationService.GetCurrentLocationAsync();
+        }
+        finally
+        {
+            _isLoadingLocation = false;
+            StateHasChanged();
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private async Task Confirm()
+    {
+        _isConfirming = true;
+        StateHasChanged();
+        
+        await Task.Delay(500); // Simular proceso
+        
+        var result = new CheckInConfirmationResult
+        {
+            Confirmed = true,
+            LocationResult = _locationResult
+        };
+        MudDialog.Close(DialogResult.Ok(result));
+    }
+}

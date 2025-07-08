@@ -1,0 +1,249 @@
+﻿@page "/logs"
+@inject ILoggingService LoggingService
+@inject IAuthenticationService AuthService
+@inject NavigationManager Navigation
+
+<AuthorizedView>
+    <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Application Logs</MudText>
+
+        <MudCard>
+            <MudCardContent>
+                <div class="d-flex justify-space-between align-center mb-4">
+                    <MudTextField @bind-Value="_searchTerm"
+                                  Placeholder="Search logs..."
+                                  Variant="Variant.Outlined"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  Immediate="true"
+                                  OnKeyUp="@(async () => await LoadLogsAsync())"
+                                  Style="max-width: 400px;" />
+
+                    <div>
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Refresh"
+                                   OnClick="LoadLogsAsync"
+                                   Class="mr-2">
+                            Refresh
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Error"
+                                   StartIcon="@Icons.Material.Filled.Delete"
+                                   OnClick="ClearLogsAsync">
+                            Clear Logs
+                        </MudButton>
+                    </div>
+                </div>
+
+                @if (_isLoading)
+                {
+                    <div class="text-center my-8">
+                        <MudProgressCircular Indeterminate="true" />
+                    </div>
+                }
+                else if (!_logs.Any())
+                {
+                    <MudAlert Severity="Severity.Info">No logs found.</MudAlert>
+                }
+                else
+                {
+                    <MudTable Items="@_filteredLogs" Hover="true" Striped="true" Bordered="true">
+                        <HeaderContent>
+                            <MudTh>Timestamp</MudTh>
+                            <MudTh>Level</MudTh>
+                            <MudTh>Category</MudTh>
+                            <MudTh>Message</MudTh>
+                            <MudTh>User</MudTh>
+                            <MudTh>Actions</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Timestamp">@context.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</MudTd>
+                            <MudTd DataLabel="Level">
+                                <MudChip T="string" Size="Size.Small" Color="@GetLogLevelColor(context.Level)">
+                                    @context.Level
+                                </MudChip>
+                            </MudTd>
+                            <MudTd DataLabel="Category">@context.Category</MudTd>
+                            <MudTd DataLabel="Message">
+                                <div style="max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    @context.Message
+                                </div>
+                            </MudTd>
+                            <MudTd DataLabel="User">@context.UserId</MudTd>
+                            <MudTd DataLabel="Actions">
+                                <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                               Size="Size.Small"
+                                               OnClick="@(() => ShowLogDetails(context))" />
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+            </MudCardContent>
+        </MudCard>
+    </MudContainer>
+</AuthorizedView>
+
+<!-- Log Details Dialog -->
+<MudDialog @bind-IsVisible="_showDetailsDialog" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            Log Details
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (_selectedLog != null)
+        {
+            <MudSimpleTable Style="overflow-x: auto;">
+                <tbody>
+                    <tr>
+                        <td><strong>ID:</strong></td>
+                        <td>@_selectedLog.Id</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Timestamp:</strong></td>
+                        <td>@_selectedLog.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Level:</strong></td>
+                        <td>
+                            <MudChip T="string" Size="Size.Small" Color="@GetLogLevelColor(_selectedLog.Level)">
+                                @_selectedLog.Level
+                            </MudChip>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Category:</strong></td>
+                        <td>@_selectedLog.Category</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Message:</strong></td>
+                        <td style="word-break: break-word;">@_selectedLog.Message</td>
+                    </tr>
+                    <tr>
+                        <td><strong>User ID:</strong></td>
+                        <td>@(_selectedLog.UserId.ToString() ?? "N/A")</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Device Info:</strong></td>
+                        <td>@(_selectedLog.DeviceInfo ?? "N/A")</td>
+                    </tr>
+                    <tr>
+                        <td><strong>App Version:</strong></td>
+                        <td>@(_selectedLog.AppVersion ?? "N/A")</td>
+                    </tr>
+                    @if (!string.IsNullOrEmpty(_selectedLog.StackTrace))
+                    {
+                        <tr>
+                            <td><strong>Stack Trace:</strong></td>
+                            <td>
+                                <pre style="font-size: 0.8rem; overflow-x: auto;">@_selectedLog.StackTrace</pre>
+                            </td>
+                        </tr>
+                    }
+                    @if (_selectedLog.AdditionalData?.Any() == true)
+                    {
+                        <tr>
+                            <td><strong>Additional Data:</strong></td>
+                            <td>
+                                <pre style="font-size: 0.8rem; overflow-x: auto;">@System.Text.Json.JsonSerializer.Serialize(_selectedLog.AdditionalData, new System.Text.Json.JsonSerializerOptions { WriteIndented = true })</pre>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </MudSimpleTable>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => _showDetailsDialog = false)">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private List<LogEntry> _logs = new();
+    private List<LogEntry> _filteredLogs = new();
+    private string _searchTerm = string.Empty;
+    private bool _isLoading = false;
+    private bool _showDetailsDialog = false;
+    private LogEntry? _selectedLog;
+
+    private DialogOptions _dialogOptions = new()
+    {
+        MaxWidth = MaxWidth.Medium,
+        FullWidth = true,
+        CloseButton = true
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthService.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        await LoadLogsAsync();
+    }
+
+    private async Task LoadLogsAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            _logs = await LoggingService.GetLogsAsync(500);
+            FilterLogs();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void FilterLogs()
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            _filteredLogs = _logs;
+        }
+        else
+        {
+            _filteredLogs = _logs.Where(log =>
+                log.Message.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                (log.Category?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                log.Level.ToString().Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+        }
+    }
+
+    private async Task ClearLogsAsync()
+    {
+        var result = await Application.Current!.MainPage!.DisplayAlert(
+            "Clear Logs",
+            "Are you sure you want to clear all logs?",
+            "Yes",
+            "No");
+
+        if (result)
+        {
+            await LoggingService.ClearLogsAsync();
+            await LoadLogsAsync();
+        }
+    }
+
+    private void ShowLogDetails(LogEntry log)
+    {
+        _selectedLog = log;
+        _showDetailsDialog = true;
+    }
+
+    private Color GetLogLevelColor(LogLevel level) => level switch
+    {
+        LogLevel.Trace => Color.Default,
+        LogLevel.Debug => Color.Info,
+        LogLevel.Information => Color.Success,
+        LogLevel.Warning => Color.Warning,
+        LogLevel.Error => Color.Error,
+        LogLevel.Critical => Color.Error,
+        _ => Color.Default
+    };
+}

@@ -1,0 +1,120 @@
+﻿@page "/panicButton"
+@inject NavigationManager Navigation
+@inject ISnackbar snackbar
+@using LalaHealthCare.App.Models.Enum
+
+<MudStack Class="mt-6" Justify="Justify.Center" AlignItems="AlignItems.Center">
+    <MudButton OnClick="@(e => ToggleOverlay(true))">
+        <MudStack>
+            <MudImage Src="images/panic.png" Height="161" Elevation="0" Class="mx-auto d-block" />
+            <MudStack>
+                <MudText Typo="Typo.h6" Align="Align.Center" Style="font-family:'Michroma'; color:red; font-weight: bold;" Class="mb-0"><b>LOCKDOWN</b></MudText>
+                <MudText Typo="Typo.subtitle2" Align="Align.Center" Style="font-family:'Michroma'; font-weight: bold;" Class="mt-n5"><b>Lock All Doors</b></MudText>
+            </MudStack>
+        </MudStack>
+    </MudButton>
+    <br />
+    <br />
+    <MudButton Variant="Variant.Outlined" OnClick="goPhone" Style="height: 55px; font-weight: bold;Width: 300px" Class="border-solid border-2 pa-4 mt-16"><b>CALL 911</b></MudButton>
+</MudStack>
+
+@code {
+    private bool isVisible;
+
+    public async Task ToggleOverlay(bool value)
+    {
+        try
+        {
+            // var eventUtility = new EventClickedUtility(eventServices, userServices);
+            // var resultEvent = await eventUtility.SendEnvent(ConstClicked.LockDown);
+            // var dateReport = DateTime.Now;
+            // var time = dateReport.ToString("HH':'mm':'ss");
+            // var date = $"{dateReport.ToString("yyyy-MM-dd")}T{time}";
+
+            // var result = await service.LockDownActivate(new GenericSendDto
+            // {
+            //     url = Preferences.Default.Get("urlApi", ""),
+            //     oauthToken = resultEvent.AccessToken,
+            //     data = new
+            //     {
+            //         Latitude = resultEvent.Latitud,
+            //         Longitude = resultEvent.Longitud,
+            //         AppVersion = AppInfo.Current.VersionString,
+            //         AppSO = DeviceInfo.Current.Platform.ToString(),
+            //         DeviceTime = date
+            //     }
+            // });
+
+            // if (result.success)
+            // {
+                snackbar.Configuration.PositionClass = Defaults.Classes.Position.BottomCenter;
+                snackbar.Add("active lockdown success", MudBlazor.Severity.Success);
+                // Navigation.NavigateTo(ConstNavigator.Dashboard);
+            // }
+            // else
+            //     await Modal.Alert(result.showMessage, "Ok", TypeModal.Error);
+        }
+        catch (UnauthorizedAccessException e)
+        {
+            Preferences.Default.Set("username", "");
+            Preferences.Default.Set("password", "");
+            Navigation.NavigateTo(ConstNavigator.Login);
+        }
+        catch (Exception)
+        {
+            snackbar.Add("Oops an error has occurred.", MudBlazor.Severity.Error);
+        }
+
+    }
+
+    void goBack()
+    {
+        Navigation.NavigateTo(ConstNavigator.Dashboard);
+    }
+
+    async void goPhone()
+    {
+        try
+        {
+            var telephone = Preferences.Default.Get("numberEmergency", "0");
+            // var eventUtility = new EventClickedUtility(eventServices, userServices);
+            // var resultEvent = await eventUtility.SendEnvent(ConstClicked.GoPhoneLockDown);
+            // var dateReport = DateTime.Now;
+            // var time = dateReport.ToString("HH':'mm':'ss");
+            // var date = $"{dateReport.ToString("yyyy-MM-dd")}T{time}";
+            // var result = await serviceIncident.SaveIncident(new GenericSendDto
+            // {
+            //     url = Preferences.Default.Get("urlApi", ""),
+            //     oauthToken = resultEvent.AccessToken,
+            //     data = new
+            //     {
+            //         description = "Call " + telephone,
+            //         incidentDate = date,
+            //         //MaplocationId = model.MapLocationId,
+            //         locationId = 5,
+            //         type = "Call " + telephone,
+            //         latitud = resultEvent.Latitud,
+            //         Longitud = resultEvent.Longitud
+            //     }
+            // });
+
+            // if (!result.success)
+            //     await Modal.Alert(result.showMessage, "Ok", TypeModal.Error);
+
+            if (PhoneDialer.Default.IsSupported)
+                PhoneDialer.Default.Open(telephone);
+            else
+                snackbar.Add("Oops an error has occurred.", MudBlazor.Severity.Error);
+        }
+        catch (UnauthorizedAccessException e)
+        {
+            Preferences.Default.Set("username", "");
+            Preferences.Default.Set("password", "");
+            Navigation.NavigateTo(ConstNavigator.Login);
+        }
+        catch (Exception)
+        {
+            snackbar.Add("Oops an error has occurred.", MudBlazor.Severity.Error);
+        }
+    }
+}

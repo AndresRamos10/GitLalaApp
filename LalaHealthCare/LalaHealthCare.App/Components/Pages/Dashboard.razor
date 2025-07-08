@@ -1,0 +1,182 @@
+﻿@page "/dashboard"
+@inject DashboardViewModel ViewModel
+@inject IAuthenticationService AuthService
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@implements IDisposable
+@using LalaHealthCare.App.Models.Enum
+
+<div class="main-content-with-nav">    
+
+    <MudContainer MaxWidth="MaxWidth.Small" Class="mt-4 pb-4">
+        <!-- Search Bar -->
+        <MudTextField @bind-Value="ViewModel.SearchTerm"
+                      Placeholder="Search Patient/Date"
+                      Variant="Variant.Outlined"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      FullWidth="true"
+                      Class="mb-4"
+                      Immediate="true" />
+
+        <!-- Date Selector -->
+        <MudCard Class="mb-4">
+            <MudCardContent Class="py-3">
+                <div class="d-flex align-center justify-space-between">
+                    @* <MudText>@(ViewModel.SelectedDate?.ToString("dddd, MMM d") ?? "Seleccionar fecha")</MudText> *@
+                    <MudDatePicker @ref="_datePicker"
+                                   @bind-Date="ViewModel.SelectedDate"
+                                   AutoClose="true"
+                                   @bind-IsOpen="_datePickerOpen" />
+                    <div class="d-flex align-center gap-2">
+                        @* <MudIconButton Icon="@Icons.Material.Filled.CalendarToday"
+                                       Size="Size.Small"
+                                       OnClick="@(() => _datePickerOpen = true)" /> *@
+                        <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                       Size="Size.Small"
+                                       Color="Color.Primary"
+                                       OnClick="@(() => ViewModel.AddNewVisitCommand.Execute(null))" />
+                    </div>
+                </div>
+            </MudCardContent>
+        </MudCard>
+
+        <!-- Next Appointment Card -->
+        @if (ViewModel.NextVisit != null)
+        {
+            <MudText Typo="Typo.subtitle1" Class="mb-2">Next appointment:</MudText>
+        }
+
+        <!-- Visits List -->
+        @if (ViewModel.IsBusy)
+        {
+            <div class="text-center my-8">
+                <MudProgressCircular Indeterminate="true" />
+            </div>
+        }
+        else if (!ViewModel.Visits.Any())
+        {
+            <MudCard>
+                <MudCardContent Class="text-center py-8">
+                    <MudIcon Icon="@Icons.Material.Filled.EventNote" Size="Size.Large" Color="Color.Default" />
+                    <MudText Typo="Typo.h6" Class="mt-2">No visits scheduled</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        No visits found for @(ViewModel.SelectedDate?.ToString("MMM d, yyyy") ?? "selected date")
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        }
+        else
+        {
+            <div class="visits-container">
+                @foreach (var visit in ViewModel.Visits)
+                {
+                    <MudCard Class="@ViewModel.GetVisitCardClass(visit)" 
+                             Outlined="@(visit.Status != VisitStatus.InProgress)">
+                        <MudCardContent Class="py-3">
+                            <div class="d-flex align-center justify-space-between">
+                                <div class="d-flex align-center gap-3">
+                                    <MudAvatar Size="Size.Medium">
+                                        @if (!string.IsNullOrEmpty(visit.PatientProfilePictureUrl))
+                                        {
+                                            <MudImage Src="@visit.PatientProfilePictureUrl" />
+                                        }
+                                        else
+                                        {
+                                            <MudIcon Icon="@Icons.Material.Filled.Person" />
+                                        }
+                                    </MudAvatar>
+                                    <div>
+                                        <MudText Typo="Typo.subtitle1" Class="font-weight-bold">
+                                            @visit.PatientName
+                                        </MudText>
+                                        <MudText Typo="Typo.body2">
+                                            <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Small" />
+                                            @visit.ScheduledDateTime.ToString("hh:mm tt")
+                                        </MudText>
+                                        <MudText Typo="Typo.body2">
+                                            <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" />
+                                            @visit.Location
+                                        </MudText>
+                                        @if (visit.CheckInAddress != null)
+                                        {
+                                            <MudText Typo="Typo.caption" Color="Color.Success">
+                                                <MudIcon Icon="@Icons.Material.Filled.MyLocation" Size="Size.Small" />
+                                                @visit.CheckInAddress
+                                            </MudText>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <MudChip T="string"
+                                             Size="Size.Small" 
+                                             Color="@ViewModel.GetStatusColor(visit.Status)"
+                                             Class="mb-2">
+                                        @ViewModel.GetStatusText(visit.Status)
+                                    </MudChip>
+                                    <div>
+                                        @if (visit.Status == VisitStatus.Planned)
+                                        {
+                                            <MudButton Variant="Variant.Filled"
+                                                       Color="Color.Primary"
+                                                       Size="Size.Small"
+                                                       StartIcon="@Icons.Material.Filled.Login"
+                                                       OnClick="@(() => ViewModel.CheckInCommand.Execute(visit))">
+                                                Clock In
+                                            </MudButton>
+                                        }
+                                        else if (visit.Status == VisitStatus.InProgress)
+                                        {
+                                            <MudButton Variant="Variant.Filled"
+                                                       Color="Color.Warning"
+                                                       Size="Size.Small"
+                                                       StartIcon="@Icons.Material.Filled.Logout"
+                                                       OnClick="@(() => ViewModel.CheckOutCommand.Execute(visit))">
+                                                Clock Out
+                                            </MudButton>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </MudCardContent>
+                    </MudCard>
+                }
+            </div>
+        }
+    </MudContainer>
+</div>
+
+<!-- Date Picker Dialog -->
+@* <MudDatePicker @ref="_datePicker" 
+               @bind-Date="ViewModel.SelectedDate" 
+               AutoClose="true"
+               @bind-IsOpen="_datePickerOpen" /> *@
+
+@code {
+    private bool _datePickerOpen = false;
+    private MudDatePicker? _datePicker;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthService.IsAuthenticated)
+        {
+            await Task.Yield();
+            Navigation.NavigateTo(ConstNavigator.Dashboard);
+            return;
+        }
+
+        ViewModel.OnDataUpdated += HandleDataUpdated;
+        await ViewModel.InitializeAsync();
+    }
+
+    private void HandleDataUpdated()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        ViewModel.OnDataUpdated -= HandleDataUpdated;
+        _ = ViewModel.CleanupAsync();
+    }
+}

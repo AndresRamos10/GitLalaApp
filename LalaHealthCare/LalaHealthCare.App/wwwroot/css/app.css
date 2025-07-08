@@ -1,0 +1,128 @@
+﻿/* Estilos base de la aplicación */
+html, body {
+    font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+#app {
+    height: 100%;
+}
+
+/* Estilos para la página de login */
+.login-container {
+    /*background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);*/
+    background-image: url('../images/background.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    /* background-size: cover;*/
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-left: 2rem;;
+}
+
+.login-card {
+    max-width: 400px;
+    width: 90%;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.app-logo {
+    width: 200px;
+    height: auto;
+    margin: 0 auto 2rem;
+    display: block;
+}
+
+/* Estilos para las tarjetas de visitas */
+.visit-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+    .visit-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+    }
+
+.visit-status-completed {
+    background-color: #D8F2DE !important;
+    color: black !important;
+}
+
+.visit-status-planned {
+    background-color: #D1EAFF !important;
+    color: black !important;
+}
+
+.visit-status-inprogress {
+    background-color: #FFF9E7 !important;
+    color: black !important;
+}
+
+/* Barra de navegación inferior */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #EEF3FD;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+/* Ajuste para el contenido cuando hay barra inferior */
+.main-content-with-nav {
+    padding-bottom: 80px;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Estilos para el dashboard */
+.fast-options-menu {
+    position: fixed;
+    bottom: 100px;
+    right: 20px;
+    padding: 16px;
+    background: white;
+    border-radius: 8px;
+    min-width: 150px;
+}
+
+
+.loading-container {
+    /*background-color: #2593ec;*/
+    background-image: url('../images/welcome_complete.svg');
+    background-repeat: no-repeat;
+    background-position: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 100vw;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+}

@@ -1,0 +1,139 @@
+﻿@page "/login"
+@layout AuthLayout
+@inject LoginViewModel ViewModel
+@inject NavigationManager Navigation
+@implements IDisposable
+@using LalaHealthCare.App.Models.Enum
+
+<div class="login-container">
+    <MudContainer MaxWidth="MaxWidth.Small" Style="align-items: center;justify-content: center;">
+        <MudCard Class="login-card fade-in">
+            <MudCardContent>
+                <!-- Logo -->
+                <div class="text-center mb-6 justify-center">
+                    <MudImage Src="images/carenotes360.svg" Width="250" Alt="careNote360" />
+                    <MudText Typo="Typo.subtitle1" Class="mt-2">
+                        Get Help When & Where You Need It The Most
+                    </MudText>
+                    <MudText Typo="Typo.body2" Class="mt-4 font-italic">
+                        Please enter login information...
+                    </MudText>
+                </div>
+
+                <!-- Login Form -->
+                <EditForm Model="@ViewModel" OnValidSubmit="@(async () => await HandleLoginAsync())">
+                    <DataAnnotationsValidator />
+                    
+                    <MudTextField @bind-Value="ViewModel.Username" 
+                                  Label="Username" 
+                                  Variant="Variant.Outlined"
+                                  Class="mb-4"
+                                  FullWidth="true"
+                                  Required="true" />
+                    
+                    <MudTextField @bind-Value="ViewModel.Password" 
+                                  Label="Password" 
+                                  Variant="Variant.Outlined"
+                                  InputType="@(ViewModel.IsPasswordVisible ? InputType.Text : InputType.Password)"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@ViewModel.PasswordVisibilityIcon"
+                                  OnAdornmentClick="@(() => ViewModel.TogglePasswordVisibilityCommand.Execute(null))"
+                                  Class="mb-4"
+                                  FullWidth="true"
+                                  Required="true" />
+
+                    <!-- Language Selector -->
+                    <MudSelect @bind-Value="ViewModel.SelectedLanguage" 
+                               Label="Select Language" 
+                               Variant="Variant.Outlined"
+                               Class="mb-6"
+                               FullWidth="true">
+                        <MudSelectItem Value="@("en")">
+                            <div class="d-flex align-center">
+                                <MudIcon Icon="@Icons.Material.Filled.Language" Class="mr-2" />
+                                English
+                            </div>
+                        </MudSelectItem>
+                        <MudSelectItem Value="@("es")">
+                            <div class="d-flex align-center">
+                                <MudIcon Icon="@Icons.Material.Filled.Language" Class="mr-2" />
+                                Español
+                            </div>
+                        </MudSelectItem>
+                        <MudSelectItem Value="@("fr")">
+                            <div class="d-flex align-center">
+                                <MudIcon Icon="@Icons.Material.Filled.Language" Class="mr-2" />
+                                Français
+                            </div>
+                        </MudSelectItem>
+                    </MudSelect>
+
+                    <!-- Biometric Login Button -->
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               FullWidth="true"
+                               Size="Size.Large"
+                               StartIcon="@Icons.Material.Filled.Fingerprint"
+                               Disabled="@ViewModel.IsBusy"
+                               OnClick="@(async () => await HandleBiometricLoginAsync())"
+                               Class="biometric-button">
+                        @if (ViewModel.IsBusy)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                            <span>AUTHENTICATING...</span>
+                        }
+                        else
+                        {
+                            <span>BIOMETRICS LOGIN</span>
+                        }
+                    </MudButton>
+
+                    <!-- Regular Login (hidden, triggered by Enter key) -->
+                    <button type="submit" style="display: none;"></button>
+                </EditForm>
+
+                <!-- Demo credentials hint -->
+                <MudText Typo="Typo.caption" Align="Align.Center" Class="mt-4 mud-text-secondary">
+                    Demo: nursenotes@nursenotes.com / 123456
+                </MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudContainer>
+</div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await ViewModel.InitializeAsync();
+        
+        // Si ya está autenticado, redirigir
+        if (ViewModel.IsAuthenticated)
+        {
+            await Task.Yield();
+            Navigation.NavigateTo(ConstNavigator.Dashboard);
+        }
+    }
+
+    private async Task HandleLoginAsync()
+    {
+        await ViewModel.LoginCommand.ExecuteAsync(null);
+        if (ViewModel.IsAuthenticated)
+        {
+            Navigation.NavigateTo(ConstNavigator.Dashboard);
+        }
+    }
+
+    private async Task HandleBiometricLoginAsync()
+    {
+        await ViewModel.BiometricLoginCommand.ExecuteAsync(null);
+        if (ViewModel.IsAuthenticated)
+        {
+            Navigation.NavigateTo(ConstNavigator.Dashboard);
+        }
+    }
+
+    public void Dispose()
+    {
+        _ = ViewModel.CleanupAsync();
+    }
+}

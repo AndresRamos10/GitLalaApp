@@ -1,0 +1,21 @@
+﻿@page "/"
+@layout AuthLayout
+@inject IAuthenticationService AuthService
+@inject NavigationManager Navigation
+@using LalaHealthCare.App.Models.Enum
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.Yield(); // Permite que el componente complete su inicialización
+
+        if (AuthService.IsAuthenticated)
+        {
+            Navigation.NavigateTo(ConstNavigator.Dashboard);
+        }
+        else
+        {
+            Navigation.NavigateTo(ConstNavigator.Login);
+        }
+    }
+}

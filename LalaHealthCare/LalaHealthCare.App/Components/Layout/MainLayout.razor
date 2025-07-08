@@ -1,0 +1,129 @@
+﻿@inherits LayoutComponentBase
+@inject LayoutViewModel ViewModel
+@inject NavigationManager Navigation
+@inject INavigationService NavigationService
+@inject ISnackbar Snackbar
+@using LalaHealthCare.App.Themes
+@using LalaHealthCare.App.Models.Enum
+
+<MudThemeProvider Theme="CustomTheme.DefaultTheme" />
+<MudPopoverProvider/>
+<MudDialogProvider/>
+<MudSnackbarProvider/>
+
+<AppErrorBoundary>
+    <!-- Header -->
+    <MudAppBar Position="Position.Top" Fixed="false" Dense="true" Style="height: 130px;background-color:#3BAFBF">
+            <MudContainer MaxWidth="MaxWidth.Small">
+                <div class="d-flex align-center justify-space-between">
+                    <div>
+                        <MudImage Src="images/carenotes360_white.png" Width="200" Alt="careNote360" Style="margin-top: 100px;"/>
+                        <MudText Typo="Typo.body1" Style="margin-left: 10px;">Good Morning Nurse</MudText>
+                        <MudText Typo="Typo.body2" Style="margin-left: 10px;">@ViewModel.UserFullName</MudText>
+                    </div>
+                 
+                 <div>
+                    <MudAvatar Size="Size.Medium" Style="margin-top: 100px;">
+                        @if (!string.IsNullOrEmpty(ViewModel.UserProfilePictureUrl))
+                        {
+                            <MudImage Src="@ViewModel.UserProfilePictureUrl" />
+                        }
+                        else
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Person" />
+                        }
+                    </MudAvatar>
+                    <MudIconButton Icon="@Icons.Material.Filled.Login" Style="color:white;" OnClick="@(() => Navigation.NavigateTo(ConstNavigator.Login))" />
+                 </div>
+                </div>
+            </MudContainer>
+        </MudAppBar>
+    <div style="height: 100%;">        
+        @Body
+    </div>
+    <!-- Bottom Navigation -->
+    <MudPaper Class="bottom-nav" Elevation="8">
+        <MudContainer MaxWidth="MaxWidth.Small">
+            <MudGrid Spacing="0" Class="py-2">
+                <MudItem xs="3" Class="text-center">
+                    <MudIconButton Icon="@Icons.Material.Filled.Home" 
+                                   Color="Color.Primary"
+                                   Size="Size.Medium" 
+                                   OnClick="@(() => Navigation.NavigateTo(ConstNavigator.Dashboard))" />
+                </MudItem>
+                @* <MudItem xs="3" Class="text-center">
+                    <MudIconButton Icon="@Icons.Material.Filled.Notifications" 
+                                   Size="Size.Medium"
+                                   OnClick="@(() => Navigation.NavigateTo(ConstNavigator.notifications))" />
+                </MudItem> *@
+                <MudItem xs="3" Class="text-center">
+                    <MudIconButton Icon="@Icons.Material.Filled.Language"
+                                   Color="Color.Primary"
+                                   Size="Size.Medium"
+                                   OnClick="@(() => NavigationService.NavigateToWebPortalNativeAsync())" />
+                </MudItem>
+                <MudItem xs="3" Class="text-center">
+                    <MudIconButton Icon="@Icons.Material.Filled.Phone"
+                                   Size="Size.Medium"
+                                   OnClick="@(() => goPhone())" />
+                </MudItem>
+                <MudItem xs="3" Class="text-center">
+                    <MudIconButton Icon="@Icons.Material.Filled.Warning"
+                                   Size="Size.Medium" 
+                                   OnClick="@(() => Navigation.NavigateTo(ConstNavigator.PanicButton))" />
+                </MudItem>
+            </MudGrid>
+        </MudContainer>
+    </MudPaper>
+
+<!-- Fast Options Menu (911, Panic Button) -->
+@* @if (ViewModel.ShowFastOptions)
+{
+    <MudPaper Class="fast-options-menu" Elevation="8">
+        <MudButton Color="Color.Error" 
+                   StartIcon="@Icons.Material.Filled.Phone"
+                   FullWidth="true"
+                   Class="mb-2"
+                   OnClick="@(() => ViewModel.Emergency911Command.Execute(null))">
+            911
+        </MudButton>
+        <MudButton Color="Color.Warning"
+                   StartIcon="@Icons.Material.Filled.Warning"
+                   FullWidth="true"
+                   OnClick="@(() => ViewModel.PanicButtonCommand.Execute(null))">
+            Panic Button
+        </MudButton>
+    </MudPaper>
+} *@
+</AppErrorBoundary>
+
+@code{
+    void goPhone()
+    {
+        try
+        {
+            var telephone = Preferences.Default.Get("numberEmergency", "0");          
+
+            if (PhoneDialer.Default.IsSupported)
+                PhoneDialer.Default.Open(telephone);
+            else
+                Snackbar.Add("Oops an error has occurred.", MudBlazor.Severity.Error);
+        }
+        catch (UnauthorizedAccessException e)
+        {
+            Preferences.Default.Set("username", "");
+            Preferences.Default.Set("password", "");
+            Navigation.NavigateTo(ConstNavigator.Login);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Oops an error has occurred.", MudBlazor.Severity.Error);
+        }
+    }
+
+    void Login()
+    {
+        ViewModel.IsAuthenticated = false;
+        Navigation.NavigateTo(ConstNavigator.Login);
+    }
+}
