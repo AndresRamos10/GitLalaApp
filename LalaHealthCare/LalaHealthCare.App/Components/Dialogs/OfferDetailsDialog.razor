@@ -1,0 +1,86 @@
+﻿@* LalaHealthCare.App/Components/Dialogs/OfferDetailsDialog.razor *@
+@using LalaHealthCare.DataAccess.Models
+@using MudBlazor
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Class="mr-2" />
+            Offer
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (Offer != null)
+        {
+            <MudPaper Elevation="0" Class="pa-3 mb-3" Style="background-color: #f5f5f5;">
+                <MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="mb-2">Offer Information</MudText>
+                <MudText Typo="Typo.body2" Class="mb-1">
+                    Due: @Offer.CreatedAt.ToString("MMMM d, yyyy 'at' h:mm tt")
+                </MudText>
+                <MudText Typo="Typo.caption" Color="Color.Primary">
+                    Service Code: @Offer.ServiceCode
+                </MudText>
+            </MudPaper>
+
+            <MudPaper Elevation="0" Class="pa-3 mb-3" Style="background-color: #f5f5f5;">
+                <MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="mb-2">Schedule Information</MudText>
+                <MudText Typo="Typo.body2" Class="mb-1">
+                    @Offer.ServiceType
+                </MudText>
+                <MudText Typo="Typo.caption" Color="Color.Primary">
+                    @Offer.ScheduledDateTime.ToString("MMMM d, yyyy")
+                </MudText>
+                <MudChip T="string" Size="Size.Small" Color="Color.Info" Class="mt-2">
+                    @Offer.ScheduledDateTime.ToString("h:mm tt") - 
+                    @Offer.ScheduledDateTime.Add(Offer.Duration).ToString("h:mm tt")
+                </MudChip>
+            </MudPaper>
+
+            <MudPaper Elevation="0" Class="pa-3" Style="background-color: #f5f5f5;">
+                <MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="mb-2">Service Location</MudText>
+                <MudText Typo="Typo.body2" Class="mb-3">
+                    <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Color="Color.Primary" Class="mr-1" />
+                    @Offer.LocationAddress
+                </MudText>
+                <!-- Map placeholder -->
+                <MudPaper Class="map-container" Elevation="1" Style="height: 300px; border-radius: 8px; overflow: hidden;">
+                    <div style="height: 100%; background-color: #e0e0e0; display: flex; align-items: center; justify-content: center;">
+                        <div style="text-align: center;">
+                            <MudIcon Icon="@Icons.Material.Filled.Map" Size="Size.Large" Color="Color.Default" />
+                            <MudText Typo="Typo.caption" Color="Color.Default" Class="mt-2">Map View</MudText>
+                        </div>
+                    </div>
+                </MudPaper>
+            </MudPaper>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Text" 
+                   Color="Color.Default" 
+                   StartIcon="@Icons.Material.Filled.Close"
+                   OnClick="DeclineOffer">
+            Decline Offer
+        </MudButton>
+        <MudButton Variant="Variant.Filled" 
+                   Color="Color.Primary" 
+                   StartIcon="@Icons.Material.Filled.Check"
+                   OnClick="AcceptOffer">
+            Accept Offer
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; }
+    [Parameter] public Offer Offer { get; set; }
+
+    private void AcceptOffer()
+    {
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private void DeclineOffer()
+    {
+        MudDialog.Close(DialogResult.Ok(false));
+    }
+}

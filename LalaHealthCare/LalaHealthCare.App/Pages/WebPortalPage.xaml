@@ -119,58 +119,91 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- Home Button -->
                 <StackLayout Grid.Column="0" 
                            Spacing="2"
                            VerticalOptions="Center">
-                    <ImageButton Source="home.png"
-                                 WidthRequest="24"
-                                 HeightRequest="24"
-                                 BackgroundColor="Transparent"
-                                 Command="{Binding HomeCommand}"/>
+                    <ImageButton WidthRequest="24"
+                         HeightRequest="24"
+                         Command="{Binding HomeCommand}"
+                         BackgroundColor="Transparent">
+                                        <ImageButton.Source>
+                                            <FontImageSource Glyph="&#xe88a;"
+                                FontFamily="MaterialIcons"
+                                 Size="24"                                                             
+                                 Color="#A9A9A9" />
+                                        </ImageButton.Source>
+                     </ImageButton>      
                 </StackLayout>
 
                 <!-- Web Portal Button (Current - Highlighted) -->
                 <StackLayout Grid.Column="1" 
                            Spacing="2"
                            VerticalOptions="Center">
-                    <Border BackgroundColor="#E8F5F7"
-                            StrokeThickness="0"
-                            Padding="8,6"
-                            HorizontalOptions="Center"
-                            VerticalOptions="Center">
-                        <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="20"/>
-                        </Border.StrokeShape>
-                        <ImageButton Source="world.png"
-                                     WidthRequest="24"
-                                     HeightRequest="24"
-                                     BackgroundColor="Transparent"/>
-                    </Border>
+                    <ImageButton WidthRequest="24"
+                          HeightRequest="24"
+                          BackgroundColor="Transparent">
+                                            <ImageButton.Source>
+                            <FontImageSource Glyph="&#xe80b;"
+                                 FontFamily="MaterialIcons"
+                                  Size="24"                                                             
+                                  Color="#3BAFBF" />
+                                            </ImageButton.Source>
+                                        </ImageButton>
                 </StackLayout>
 
                 <!-- Phone Button -->
                 <StackLayout Grid.Column="2" 
                            Spacing="2"
                            VerticalOptions="Center">
-                    <ImageButton Source="phone.png"
-                                 WidthRequest="24"
-                                 HeightRequest="24"
-                                 BackgroundColor="Transparent"
-                                 Command="{Binding PhoneCommand}"/>
+                    <ImageButton WidthRequest="24"
+                          HeightRequest="24"
+                          Command="{Binding PhoneCommand}"
+                          BackgroundColor="Transparent">
+                                            <ImageButton.Source>
+                            <FontImageSource Glyph="&#xe0b0;"
+                                 FontFamily="MaterialIcons"
+                                  Size="24"                                                             
+                                  Color="#A9A9A9" />
+                                            </ImageButton.Source>
+                                        </ImageButton>
                 </StackLayout>
 
                 <!-- Panic Button -->
                 <StackLayout Grid.Column="3" 
                            Spacing="2"
                            VerticalOptions="Center">
-                    <ImageButton Source="alert.png"
-                                 WidthRequest="24"
-                                 HeightRequest="24"
-                                 BackgroundColor="Transparent"
-                                 Command="{Binding PanicCommand}"/>
+                    <ImageButton WidthRequest="24"
+                      HeightRequest="24"
+                      Command="{Binding PanicCommand}"
+                      BackgroundColor="Transparent">
+                                        <ImageButton.Source>
+                            <FontImageSource Glyph="&#xe002;"
+                             FontFamily="MaterialIcons"
+                              Size="24"                                                             
+                              Color="#A9A9A9" />
+                                        </ImageButton.Source>
+                                    </ImageButton>
+                </StackLayout>
+
+                <!-- Offert Button -->
+                <StackLayout Grid.Column="4" 
+                        Spacing="2"
+                        VerticalOptions="Center">
+                    <ImageButton WidthRequest="24"
+                       HeightRequest="24"
+                       Command="{Binding HomeCommand}"
+                       BackgroundColor="Transparent">
+                        <ImageButton.Source>
+                            <FontImageSource Glyph="&#xe54c;"
+                          FontFamily="MaterialIcons"
+                           Size="24"                                                             
+                           Color="#A9A9A9" />
+                        </ImageButton.Source>
+                    </ImageButton>
                 </StackLayout>
             </Grid>
         </Grid>

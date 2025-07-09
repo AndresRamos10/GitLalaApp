@@ -45,32 +45,35 @@
     <MudPaper Class="bottom-nav" Elevation="8">
         <MudContainer MaxWidth="MaxWidth.Small">
             <MudGrid Spacing="0" Class="py-2">
-                <MudItem xs="3" Class="text-center">
-                    <MudIconButton Icon="@Icons.Material.Filled.Home" 
-                                   Color="Color.Primary"
+                <MudItem xs="3" Class="d-flex justify-center align-center">
+                    <MudIconButton Icon="@Icons.Material.Filled.Home"
+                                   Color="@(selected == "home" ? Color.Primary : Color.Default)"
                                    Size="Size.Medium" 
-                                   OnClick="@(() => Navigation.NavigateTo(ConstNavigator.Dashboard))" />
+                                   OnClick="@(() => {selected = "home"; Navigation.NavigateTo(ConstNavigator.Dashboard);})" />
                 </MudItem>
-                @* <MudItem xs="3" Class="text-center">
-                    <MudIconButton Icon="@Icons.Material.Filled.Notifications" 
-                                   Size="Size.Medium"
-                                   OnClick="@(() => Navigation.NavigateTo(ConstNavigator.notifications))" />
-                </MudItem> *@
-                <MudItem xs="3" Class="text-center">
+                <MudItem xs="2" Class="d-flex justify-center align-center">
                     <MudIconButton Icon="@Icons.Material.Filled.Language"
-                                   Color="Color.Primary"
+                                   Color="@(selected == "web" ? Color.Primary : Color.Default)"
                                    Size="Size.Medium"
-                                   OnClick="@(() => NavigationService.NavigateToWebPortalNativeAsync())" />
+                                   OnClick="@(() => {NavigationService.NavigateToWebPortalNativeAsync();})" />
                 </MudItem>
-                <MudItem xs="3" Class="text-center">
+                <MudItem xs="2" Class="d-flex justify-center align-center">
                     <MudIconButton Icon="@Icons.Material.Filled.Phone"
+                                   Color="@(selected == "phone" ? Color.Primary : Color.Default)"
                                    Size="Size.Medium"
-                                   OnClick="@(() => goPhone())" />
+                                   OnClick="@(() => {selected = "phone"; goPhone();})" />
                 </MudItem>
-                <MudItem xs="3" Class="text-center">
+                <MudItem xs="2" Class="d-flex justify-center align-center">
                     <MudIconButton Icon="@Icons.Material.Filled.Warning"
+                                   Color="@(selected == "alert" ? Color.Primary : Color.Default)"
                                    Size="Size.Medium" 
-                                   OnClick="@(() => Navigation.NavigateTo(ConstNavigator.PanicButton))" />
+                                   OnClick="@(() => {selected = "alert"; Navigation.NavigateTo(ConstNavigator.PanicButton);})" />
+                </MudItem>
+                <MudItem xs="3" Class="d-flex justify-center align-center">
+                    <MudIconButton Icon="@Icons.Material.Filled.LocalOffer"
+                                   Color="@(selected == "offert" ? Color.Primary : Color.Default)"
+                                   Size="Size.Medium"
+                                   OnClick="@(() => {selected = "offert"; Navigation.NavigateTo(ConstNavigator.Offers);})" />
                 </MudItem>
             </MudGrid>
         </MudContainer>
@@ -98,6 +101,8 @@
 </AppErrorBoundary>
 
 @code{
+    private string selected = "home";
+
     void goPhone()
     {
         try

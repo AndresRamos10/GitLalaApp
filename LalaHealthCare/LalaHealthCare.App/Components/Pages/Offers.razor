@@ -1,0 +1,183 @@
+﻿@page "/offers"
+@using LalaHealthCare.App.Models.Enum
+@using LalaHealthCare.App.ViewModels
+@using LalaHealthCare.DataAccess.Models
+@using MudBlazor
+@inject IAuthenticationService AuthService
+@inject NavigationManager Navigation
+@inject OffersViewModel ViewModel
+@implements IDisposable
+
+<div class="main-content-with-nav">
+    <MudContainer MaxWidth="MaxWidth.Small" Class="mt-4 pb-4">
+        <!-- Next Appointment Card -->
+        <div class="next-appointment-card">
+            <MudText Typo="Typo.body2" Style="color: #666; margin-bottom: 8px;">Next appointment:</MudText>
+            @if (ViewModel.Offers.Any(o => o.Status == OfferStatus.Pending))
+            {
+                var nextOffer = ViewModel.Offers.Where(o => o.Status == OfferStatus.Pending).OrderBy(o => o.ScheduledDateTime).First();
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <MudAvatar Size="Size.Medium">
+                        @if (!string.IsNullOrEmpty(nextOffer.PatientImageUrl))
+                        {
+                            <MudImage Src="@nextOffer.PatientImageUrl" Class="offer-avatar" />
+                        }
+                        else
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Person" />
+                        }
+                    </MudAvatar>
+                    <div style="flex: 1;">
+                        <MudText Typo="Typo.subtitle1" Style="font-weight: 500;">@nextOffer.PatientName</MudText>
+                        <div class="time-badge" style="margin-top: 4px;">
+                            <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Style="vertical-align: middle; margin-right: 4px;" />
+                            @nextOffer.ScheduledDateTime.ToString("HH:mm") - @nextOffer.ScheduledDateTime.Add(nextOffer.Duration).ToString("HH:mm")
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <MudText Typo="Typo.body1">No pending offers</MudText>
+            }
+        </div>
+
+        <!-- Date Selector -->
+        <MudCard Class="mb-4">
+            <MudCardContent Class="py-3">
+                <div class="d-flex align-center justify-space-between">
+                    <MudDatePicker @ref="_datePicker"
+                                   @bind-Date="ViewModel.SelectedDate"
+                                   AutoClose="true"
+                                   @bind-IsOpen="_datePickerOpen" />
+                </div>
+            </MudCardContent>
+        </MudCard>
+
+        <!-- Offers List -->
+        @if (ViewModel.IsLoadingOffers)
+        {
+            <div class="text-center my-8">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+            </div>
+        }
+        else if (!ViewModel.Offers.Any())
+        {
+            <MudCard>
+                <MudCardContent Class="text-center py-8">
+                    <MudIcon Icon="@Icons.Material.Filled.EventBusy" Size="Size.Large" Color="Color.Default" />
+                    <MudText Typo="Typo.h6" Class="mt-2">No offers available</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        No offers found for @(ViewModel.SelectedDate?.ToString("MMM d, yyyy") ?? "selected date")
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        }
+        else
+        {
+            <div class="offers-container">
+                @foreach (var offer in ViewModel.Offers)
+                {
+                    <div class="offer-item">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <MudAvatar Size="Size.Large">
+                                @if (!string.IsNullOrEmpty(offer.PatientImageUrl))
+                                {
+                                    <MudImage Src="@offer.PatientImageUrl" Class="offer-avatar" />
+                                }
+                                else
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Person" />
+                                }
+                            </MudAvatar>
+                            
+                            <div style="flex: 1;">
+                                @* <MudText Typo="Typo.subtitle1" Style="font-weight: 500; margin-bottom: 4px;">
+                                    @offer.PatientName
+                                </MudText> *@
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                    <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Color="Color.Default" />
+                                    <MudText Typo="Typo.body2">
+                                        @offer.ScheduledDateTime.ToString("HH:mm") - @offer.ScheduledDateTime.Add(offer.Duration).ToString("HH:mm")
+                                    </MudText>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <MudIcon Icon="@Icons.Material.Filled.Today" Size="Size.Small" Color="Color.Default" />
+                                    <MudText Typo="Typo.body2">@offer.ScheduledDateTime.ToString("MMM dd, yyyy")</MudText>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                @if (offer.Status == OfferStatus.Pending)
+                                {
+                                    <MudButton Variant="Variant.Filled" 
+                                              Class="view-offer-btn"
+                                              OnClick="@(() => ViewOffer(offer))">
+                                        <MudIcon Icon="@Icons.Material.Filled.RemoveRedEye" Size="Size.Small" Class="mr-1" />
+                                        VIEW OFFER
+                                    </MudButton>
+                                }
+                                else
+                                {
+                                    <MudChip T="string"
+                                            Size="Size.Small" 
+                                            Color="@GetStatusColor(offer.Status)">
+                                        @offer.Status.ToString()
+                                    </MudChip>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </MudContainer>
+</div>
+
+@code {
+    private MudDatePicker? _datePicker;
+    private bool _datePickerOpen = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthService.IsAuthenticated)
+        {
+            await Task.Yield();
+            Navigation.NavigateTo(ConstNavigator.Login);
+            return;
+        }
+
+        ViewModel.OnDataUpdated += HandleDataUpdated;
+        await ViewModel.InitializeAsync();
+    }
+
+    private async Task ViewOffer(Offer offer)
+    {
+        if (ViewModel.ViewOfferCommand.CanExecute(offer))
+        {
+            await ViewModel.ViewOfferCommand.ExecuteAsync(offer);
+        }
+    }
+
+    private Color GetStatusColor(OfferStatus status)
+    {
+        return status switch
+        {
+            OfferStatus.Accepted => Color.Success,
+            OfferStatus.Declined => Color.Error,
+            OfferStatus.Expired => Color.Warning,
+            _ => Color.Default
+        };
+    }
+
+    private void HandleDataUpdated()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        ViewModel.OnDataUpdated -= HandleDataUpdated;
+        _ = ViewModel.CleanupAsync();
+    }
+}

@@ -40,6 +40,7 @@ public static class MauiProgram
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+                fonts.AddFont("MaterialIcons-Regular.ttf", "MaterialIcons");
             });
 
         builder.Services.AddMauiBlazorWebView();
@@ -102,16 +103,19 @@ public static class MauiProgram
         // Registrar repositorios
         builder.Services.AddSingleton<IAuthenticationRepository, AuthenticationRepository>();
         builder.Services.AddSingleton<IVisitRepository, VisitRepository>();
+        builder.Services.AddScoped<IOfferRepository, MockOfferRepository>();
 
         // Registrar servicios de negocio
         builder.Services.AddSingleton<IAuthenticationService, AuthenticationService>();
         builder.Services.AddScoped<IVisitService, VisitService>();
+        builder.Services.AddScoped<IOfferService, OfferService>();
 
         // Registrar ViewModels
         builder.Services.AddTransient<LoginViewModel>();
         builder.Services.AddTransient<DashboardViewModel>();
         builder.Services.AddTransient<LayoutViewModel>();
         builder.Services.AddTransient<WebPortalViewModel>();
+        builder.Services.AddTransient<OffersViewModel>();
 
         return builder.Build();
     }

@@ -23,15 +23,11 @@
         <MudCard Class="mb-4">
             <MudCardContent Class="py-3">
                 <div class="d-flex align-center justify-space-between">
-                    @* <MudText>@(ViewModel.SelectedDate?.ToString("dddd, MMM d") ?? "Seleccionar fecha")</MudText> *@
                     <MudDatePicker @ref="_datePicker"
                                    @bind-Date="ViewModel.SelectedDate"
                                    AutoClose="true"
                                    @bind-IsOpen="_datePickerOpen" />
                     <div class="d-flex align-center gap-2">
-                        @* <MudIconButton Icon="@Icons.Material.Filled.CalendarToday"
-                                       Size="Size.Small"
-                                       OnClick="@(() => _datePickerOpen = true)" /> *@
                         <MudIconButton Icon="@Icons.Material.Filled.Add"
                                        Size="Size.Small"
                                        Color="Color.Primary"
@@ -146,12 +142,6 @@
     </MudContainer>
 </div>
 
-<!-- Date Picker Dialog -->
-@* <MudDatePicker @ref="_datePicker" 
-               @bind-Date="ViewModel.SelectedDate" 
-               AutoClose="true"
-               @bind-IsOpen="_datePickerOpen" /> *@
-
 @code {
     private bool _datePickerOpen = false;
     private MudDatePicker? _datePicker;
@@ -161,7 +151,7 @@
         if (!AuthService.IsAuthenticated)
         {
             await Task.Yield();
-            Navigation.NavigateTo(ConstNavigator.Dashboard);
+            Navigation.NavigateTo(ConstNavigator.Login);
             return;
         }
 

@@ -87,8 +87,8 @@ public class LoginViewModel : ViewModelBase
 
     private async Task LoginAsync()
     {
-        //Username = "nursenotes@nursenotes.com";
-        //Password = "123456";
+        Username = "nursenotes@nursenotes.com";
+        Password = "123456";
         if (!ValidateInput())
         {
             return;
