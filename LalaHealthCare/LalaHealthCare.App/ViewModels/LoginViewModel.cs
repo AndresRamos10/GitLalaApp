@@ -87,8 +87,10 @@ public class LoginViewModel : ViewModelBase
 
     private async Task LoginAsync()
     {
+#if DEBUG
         Username = "nursenotes@nursenotes.com";
         Password = "123456";
+#endif
         if (!ValidateInput())
         {
             return;
@@ -183,21 +185,28 @@ public class LoginViewModel : ViewModelBase
         {
             IsBusy = true;
 
+            // Log del dispositivo
+            await _loggingService.LogInformationAsync($"Device: {DeviceInfo.Current.Model} - {DeviceInfo.Current.Platform}");
+
             // Verificar si biometría está disponible
             var isAvailable = await _biometricService.IsAvailableAsync();
+            await _loggingService.LogInformationAsync($"Biometric available: {isAvailable}");
+
             if (!isAvailable)
             {
+                await _loggingService.LogWarningAsync("Biometric not available, falling back to password login");
                 await LoginAsync();
                 return;
             }
 
             // Verificar si el usuario tiene biometría habilitada
             var isBiometricEnabled = await _biometricCredentialService.IsBiometricLoginEnabledAsync();
+            await _loggingService.LogInformationAsync($"Biometric enabled for user: {isBiometricEnabled}");
+
             if (!isBiometricEnabled)
             {
                 await LoginAsync();
-                // Si no está habilitada, preguntar si quiere habilitarla después del primer login exitoso
-                _snackbar.Add("Primero inicia sesión con tu contraseña para habilitar el acceso biométrico", Severity.Info);
+                _snackbar.Add("First, log in with your password to enable biometric access.", Severity.Info);
                 return;
             }
 
@@ -205,7 +214,7 @@ public class LoginViewModel : ViewModelBase
             var savedUsername = await _biometricCredentialService.GetBiometricUsernameAsync();
             if (string.IsNullOrEmpty(savedUsername))
             {
-                _snackbar.Add("No hay usuario asociado con la autenticación biométrica", Severity.Warning);
+                _snackbar.Add("There is no user associated with the biometric authentication.", Severity.Warning);
                 await _biometricCredentialService.DisableBiometricLoginAsync();
                 return;
             }
@@ -265,7 +274,7 @@ public class LoginViewModel : ViewModelBase
         {
             IsBusy = false;
         }
-    }
+    }    
 
     private bool ValidateInput()
     {

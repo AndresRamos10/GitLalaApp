@@ -18,7 +18,15 @@ public class BiometricService : IBiometricService
     {
         try
         {
+#if IOS
+            // En iOS, verificar primero si tenemos el permiso de Face ID
+            var status = await GetAvailabilityAsync();
+            await _loggingService.LogInformationAsync($"iOS Biometric availability status: {status}");
+            
+            return status == FingerprintAvailability.Available;
+#else
             return await CrossFingerprint.Current.IsAvailableAsync();
+#endif
         }
         catch (Exception ex)
         {
@@ -31,7 +39,8 @@ public class BiometricService : IBiometricService
     {
         try
         {
-            var availability = await CrossFingerprint.Current.GetAvailabilityAsync();
+            var availability = await GetAvailabilityAsync();
+            await _loggingService.LogInformationAsync($"Biometric enrollment status: {availability}");
             return availability == FingerprintAvailability.Available;
         }
         catch (Exception ex)
@@ -41,15 +50,47 @@ public class BiometricService : IBiometricService
         }
     }
 
+    private async Task<FingerprintAvailability> GetAvailabilityAsync()
+    {
+        try
+        {
+            var availability = await CrossFingerprint.Current.GetAvailabilityAsync();
+
+#if IOS
+            // Log adicional para iOS
+            await _loggingService.LogInformationAsync($"Raw iOS availability: {availability}");
+            
+            // En iOS, si obtenemos Unknown, intentar forzar una verificación
+            if (availability == FingerprintAvailability.Unknown)
+            {
+                // Intentar obtener el tipo de autenticación para forzar la inicialización
+                var authType = await CrossFingerprint.Current.GetAuthenticationTypeAsync();
+                await _loggingService.LogInformationAsync($"iOS Auth Type: {authType}");
+                
+                // Volver a verificar disponibilidad
+                availability = await CrossFingerprint.Current.GetAvailabilityAsync();
+            }
+#endif
+
+            return availability;
+        }
+        catch (Exception ex)
+        {
+            await _loggingService.LogErrorAsync("Error in GetAvailabilityAsync", ex);
+            return FingerprintAvailability.Unknown;
+        }
+    }
+
     public async Task<BiometricAuthenticationResult> AuthenticateAsync(string reason)
     {
         try
         {
             // Verificar disponibilidad
-            var availability = await CrossFingerprint.Current.GetAvailabilityAsync();
+            var availability = await GetAvailabilityAsync();
 
             if (availability != FingerprintAvailability.Available)
             {
+                await _loggingService.LogWarningAsync($"Biometric not available: {availability}");
                 return new BiometricAuthenticationResult
                 {
                     IsSuccess = false,
@@ -58,17 +99,20 @@ public class BiometricService : IBiometricService
                 };
             }
 
-            // Configurar la solicitud de autenticación ajuste Andres
-            var request = new AuthenticationRequestConfiguration("Prove you have fingers!", "Because without it you can't have access");
-            //reason: reason,
-            ////cancel: "Cancelar",
-            ////fallback: "Usar contraseña",
-            //title: "Demasiado rápido, intenta de nuevo")
-            //{
-            //    AllowAlternativeAuthentication = true,
-            //    CancelTitle = "Cancelar autenticación",
-            //    FallbackTitle = "Usar método alternativo"
-            //};
+            // Configurar la solicitud de autenticación
+            var request = new AuthenticationRequestConfiguration(
+                title: "CareNote360",
+                reason: reason)
+            {
+                AllowAlternativeAuthentication = true,
+                CancelTitle = "Cancelar",
+                FallbackTitle = "Usar contraseña"
+            };
+
+//#if IOS
+//            // Para iOS, asegurar que usamos las configuraciones correctas
+//            request.UseDialog = false; // En iOS no usar diálogo personalizado
+//#endif
 
             // Realizar autenticación
             var result = await CrossFingerprint.Current.AuthenticateAsync(request);
@@ -85,6 +129,8 @@ public class BiometricService : IBiometricService
             }
             else
             {
+                await _loggingService.LogWarningAsync($"Biometric authentication failed: {result.Status} - {result.ErrorMessage}");
+
                 var status = result.Status switch
                 {
                     FingerprintAuthenticationResultStatus.Canceled => BiometricAuthenticationStatus.Cancelled,
@@ -97,7 +143,7 @@ public class BiometricService : IBiometricService
                 {
                     IsSuccess = false,
                     Status = status,
-                    ErrorMessage = result.ErrorMessage
+                    ErrorMessage = result.ErrorMessage ?? "Autenticación fallida"
                 };
             }
         }
@@ -120,18 +166,19 @@ public class BiometricService : IBiometricService
         {
             var type = await CrossFingerprint.Current.GetAuthenticationTypeAsync();
 
+            await _loggingService.LogInformationAsync($"Authentication type detected: {type}");
+
             return type switch
             {
                 AuthenticationType.Fingerprint => BiometricAuthenticationType.Fingerprint,
                 AuthenticationType.Face => BiometricAuthenticationType.Face,
-                //AuthenticationType.Iris => BiometricAuthenticationType.Iris,
                 AuthenticationType.None => BiometricAuthenticationType.None,
                 _ => BiometricAuthenticationType.Unknown
             };
         }
         catch (Exception ex)
         {
-            _loggingService.LogErrorAsync("Error getting authentication type", ex).Wait();
+            await _loggingService.LogErrorAsync("Error getting authentication type", ex);
             return BiometricAuthenticationType.Unknown;
         }
     }
